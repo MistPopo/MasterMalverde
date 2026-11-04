@@ -114,6 +114,14 @@ app.post('/api/catalog', authRequired, requireRole('admin'), wrap(async (req, re
      clean(b.image_url, 300), clean(b.price_from, 40)]);
   res.json(await get('SELECT * FROM services WHERE id=?', [lastID]));
 }));
+app.patch('/api/catalog/:id', authRequired, requireRole('admin'), wrap(async (req, res) => {
+  const b = req.body;
+  if (!(await get('SELECT id FROM services WHERE id=?', [req.params.id]))) return res.status(404).json({ error: 'Servicio no encontrado' });
+  await run('UPDATE services SET title=?, category=?, description=?, image_url=?, price_from=? WHERE id=?',
+    [clean(b.title, 120) || 'Servicio', clean(b.category, 60) || 'General', clean(b.description, 500),
+     clean(b.image_url, 300), clean(b.price_from, 40), req.params.id]);
+  res.json(await get('SELECT * FROM services WHERE id=?', [req.params.id]));
+}));
 app.delete('/api/catalog/:id', authRequired, requireRole('admin'), wrap(async (req, res) => {
   await run('DELETE FROM services WHERE id=?', [req.params.id]);
   res.json({ ok: true });
@@ -130,6 +138,15 @@ app.post('/api/works', authRequired, requireRole('admin'), wrap(async (req, res)
   const { lastID } = await run('INSERT INTO works(title,place,description,image_url,year) VALUES (?,?,?,?,?)',
     [title, clean(b.place, 120), clean(b.description, 500), clean(b.image_url, 300), clean(b.year, 4)]);
   res.json(await get('SELECT * FROM works WHERE id=?', [lastID]));
+}));
+app.patch('/api/works/:id', authRequired, requireRole('admin'), wrap(async (req, res) => {
+  const b = req.body;
+  const title = clean(b.title, 120);
+  if (!title) return res.status(400).json({ error: 'El trabajo necesita un título' });
+  if (!(await get('SELECT id FROM works WHERE id=?', [req.params.id]))) return res.status(404).json({ error: 'Trabajo no encontrado' });
+  await run('UPDATE works SET title=?, place=?, description=?, image_url=?, year=? WHERE id=?',
+    [title, clean(b.place, 120), clean(b.description, 500), clean(b.image_url, 300), clean(b.year, 4), req.params.id]);
+  res.json(await get('SELECT * FROM works WHERE id=?', [req.params.id]));
 }));
 app.delete('/api/works/:id', authRequired, requireRole('admin'), wrap(async (req, res) => {
   await run('DELETE FROM works WHERE id=?', [req.params.id]);
@@ -211,9 +228,8 @@ app.post('/api/reservations', authRequired, requireRole('client', 'admin'), wrap
 app.delete('/api/reservations/:id', authRequired, wrap(async (req, res) => {
   const r = await get('SELECT * FROM reservations WHERE id=?', [req.params.id]);
   if (!r) return res.status(404).json({ error: 'Reserva no encontrada' });
-  if (req.user.role !== 'admin' && r.user_id !== req.user.id) return res.status(403).json({ error: 'No puedes cancelar esta reserva' });
-  // Se marca cancelada (no se borra) para conservar el historial
-  await run("UPDATE reservations SET status='canceled' WHERE id=?", [req.params.id]);
+  if (req.user.role !== 'admin' && r.user_id !== req.user.id) return res.status(403).json({ error: 'No puedes eliminar esta reserva' });
+  await run('DELETE FROM reservations WHERE id=?', [req.params.id]);
   res.json({ ok: true });
 }));
 
@@ -250,6 +266,20 @@ app.post('/api/users', authRequired, requireRole('admin'), wrap(async (req, res)
   const { lastID } = await run('INSERT INTO users(name,email,password_hash,role) VALUES (?,?,?,?)',
     [name, email, bcrypt.hashSync(password, 10), role]);
   res.json({ id: lastID, name, email, role });
+}));
+app.patch('/api/users/:id/role', authRequired, requireRole('admin'), wrap(async (req, res) => {
+  const role = ['client', 'worker', 'admin'].includes(req.body.role) ? req.body.role : null;
+  if (!role) return res.status(400).json({ error: 'Rol no válido' });
+  if (Number(req.params.id) === req.user.id) return res.status(400).json({ error: 'No puedes cambiar tu propio rol' });
+  await run('UPDATE users SET role=? WHERE id=?', [role, req.params.id]);
+  res.json(await get('SELECT id,name,email,role FROM users WHERE id=?', [req.params.id]));
+}));
+app.delete('/api/users/:id', authRequired, requireRole('admin'), wrap(async (req, res) => {
+  if (Number(req.params.id) === req.user.id) return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta' });
+  await run('UPDATE reservations SET worker_id=NULL WHERE worker_id=?', [req.params.id]);
+  await run('DELETE FROM reservations WHERE user_id=?', [req.params.id]);
+  await run('DELETE FROM users WHERE id=?', [req.params.id]);
+  res.json({ ok: true });
 }));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));

@@ -1,135 +1,513 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>M.Malv | Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MasterMalverde | Panel de administración</title>
 <style>
-  body{margin:0; font-family:Inter; background:#0f172a; color:#e5e7eb}
-  header{display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#111827; border-bottom:1px solid rgba(255,255,255,.08)}
-  .grid{display:grid; gap:16px; grid-template-columns:1fr 1fr; padding:16px}
-  .card{background:#1f2937; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px}
-  input,select,textarea{width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#0b1226; color:#e5e7eb}
-  button{padding:10px 12px; border-radius:10px; border:0; font-weight:700; cursor:pointer; background:#f59e0b; color:#111827}
-  table{width:100%; border-collapse:collapse} th,td{padding:8px; border-bottom:1px solid rgba(255,255,255,.12); text-align:left}
-  .badge{display:inline-flex; align-items:center; gap:6px; background:#111827; border:1px solid rgba(255,255,255,.12); color:#e5e7eb; padding:6px 10px; border-radius:999px; font-size:12px}
-  @media (max-width: 900px){ .grid{grid-template-columns:1fr} }
+  :root{
+    --bg:#f5f3ef; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#e7e1d7;
+    --acc:#c2410c; --acc-soft:#fbeee6; --ok:#15803d; --ok-soft:#e7f6ec; --warn:#a16207; --warn-soft:#fdf4dc;
+    --bad:#b91c1c; --bad-soft:#fde8e8; --info:#1d4ed8; --info-soft:#e6eefc; --side:#1c1917; --side-ink:#e7e5e4;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#12100e; --card:#1c1916; --ink:#f3ede4; --muted:#a8a095; --line:#2f2923; --acc-soft:#2e2118;
+      --ok-soft:#14261b; --warn-soft:#2a2312; --bad-soft:#2c1616; --info-soft:#161f33; --side:#0c0a09; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.45; font-size:15px}
+  .layout{display:grid; grid-template-columns:230px 1fr; min-height:100vh}
+  aside{background:var(--side); color:var(--side-ink); padding:18px 12px; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:4px}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:800; padding:4px 8px 18px; color:#fff; text-decoration:none}
+  .logo{width:30px; height:30px; border-radius:8px; background:repeating-linear-gradient(135deg,var(--acc) 0 10px,#2a2a2a 10px 20px); flex:none}
+  .tab{display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:transparent; color:var(--side-ink); border:0; border-radius:10px; padding:11px 12px; font:inherit; font-weight:600; cursor:pointer}
+  .tab:hover{background:rgba(255,255,255,.06)}
+  .tab.on{background:var(--acc); color:#fff}
+  .tab .count{margin-left:auto; font-size:12px; background:rgba(255,255,255,.15); padding:1px 8px; border-radius:99px}
+  .side-foot{margin-top:auto; display:grid; gap:6px; padding:8px; font-size:13px; color:#a8a29e}
+  .side-foot a,.side-foot button{color:#e7e5e4; background:transparent; border:1px solid #3a3530; border-radius:10px; padding:8px 10px; font:inherit; cursor:pointer; text-decoration:none; text-align:center}
+  main{padding:24px 28px 60px; min-width:0}
+  h1{font-size:24px; margin:0 0 4px} .sub{color:var(--muted); margin:0 0 20px}
+  h3{margin:0 0 12px; font-size:16px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px}
+  .stats{display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); margin-bottom:20px}
+  .stat .n{font-size:30px; font-weight:800; line-height:1.1} .stat .l{color:var(--muted); font-size:13px; font-weight:600}
+  .stat.warn .n{color:var(--warn)} .stat.ok .n{color:var(--ok)} .stat.acc .n{color:var(--acc)}
+  .two{display:grid; gap:18px; grid-template-columns:minmax(280px,360px) 1fr; align-items:start}
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px}
+  .toolbar > *{flex:0 1 auto}
+  .grow{flex:1 1 220px!important}
+  input,select,textarea{font:inherit; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); width:100%}
+  textarea{min-height:80px; resize:vertical}
+  .field{display:grid; gap:5px; margin-bottom:12px}
+  label{font-weight:700; font-size:13px}
+  .row2{display:grid; gap:10px; grid-template-columns:1fr 1fr}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:0; border-radius:10px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer; background:var(--acc); color:#fff; white-space:nowrap; text-decoration:none}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line)}
+  .btn.sm{padding:6px 11px; font-size:13px}
+  .btn.danger{background:transparent; color:var(--bad); border:1px solid var(--line)}
+  .btn.danger.sure{background:var(--bad); color:#fff; border-color:var(--bad)}
+  .preview{height:150px; border-radius:12px; border:1px dashed var(--line); display:grid; place-items:center; overflow:hidden; color:var(--muted); font-size:13px; margin-bottom:12px; background:var(--bg)}
+  .preview img{width:100%; height:100%; object-fit:cover}
+  .items{display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+  .item{background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column}
+  .item .img{height:130px; background:var(--bg); display:grid; place-items:center; color:var(--muted); font-size:13px}
+  .item .img img{width:100%; height:100%; object-fit:cover}
+  .item .body{padding:12px 14px; flex:1}
+  .item .acts{display:flex; gap:8px; padding:0 14px 14px}
+  .tag{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; background:var(--acc-soft); color:var(--acc)}
+  .muted{color:var(--muted); font-size:13px}
+  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--card)}
+  table{width:100%; border-collapse:collapse; min-width:860px}
+  th{font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); background:var(--bg)}
+  td{padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px}
+  tr:last-child td{border-bottom:0}
+  td select{padding:6px 8px; font-size:13px; min-width:130px}
+  .pill{display:inline-block; font-size:12px; font-weight:700; padding:3px 9px; border-radius:99px}
+  .s-scheduled{background:var(--info-soft); color:var(--info)} .s-in_progress{background:var(--warn-soft); color:var(--warn)}
+  .s-done{background:var(--ok-soft); color:var(--ok)} .s-canceled{background:var(--bad-soft); color:var(--bad)}
+  .r-admin{background:var(--acc-soft); color:var(--acc)} .r-worker{background:var(--info-soft); color:var(--info)} .r-client{background:var(--bg); color:var(--muted)}
+  .next{display:grid; gap:10px}
+  .next .v{display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line)}
+  .next .v:last-child{border-bottom:0}
+  .empty{color:var(--muted); padding:18px 0; text-align:center}
+  .toast{position:fixed; right:18px; bottom:18px; background:#1f2937; color:#fff; padding:12px 16px; border-radius:12px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.2); opacity:0; transform:translateY(10px); transition:.2s; pointer-events:none; z-index:99; max-width:360px}
+  .toast.show{opacity:1; transform:none} .toast.err{background:var(--bad)}
+  [hidden]{display:none!important}
+  :focus-visible{outline:3px solid color-mix(in srgb,var(--acc) 50%,transparent); outline-offset:2px}
+  @media (max-width:980px){ .two{grid-template-columns:1fr} }
+  @media (max-width:760px){
+    .layout{grid-template-columns:1fr; grid-template-rows:auto 1fr}
+    aside{position:sticky; height:auto; flex-direction:row; align-items:center; overflow-x:auto; padding:8px 10px; gap:6px; z-index:5}
+    #who{display:none}
+    .side-foot a{white-space:nowrap}
+    .brand{padding:4px 8px} .brand span.t{display:none}
+    .tab{width:auto; white-space:nowrap} .tab .count{display:none}
+    .side-foot{margin:0; padding:0; display:flex}
+    main{padding:18px 16px 60px}
+    .row2{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
-<header>
-  <div style="display:flex; align-items:center; gap:10px">
-    <div style="width:28px; height:28px; border-radius:8px; background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#1f1f1f 10px,#1f1f1f 20px)"></div>
-    <strong>MasterMalverde — Admin</strong>
-  </div>
-  <div>
-    <span id="who" class="badge"></span>
-    <button id="logout">Salir</button>
-  </div>
-</header>
+<div class="layout">
+  <aside>
+    <a class="brand" href="index.html"><span class="logo" aria-hidden="true"></span><span class="t">MasterMalverde</span></a>
+    <button class="tab on" data-tab="resumen" type="button">📊 Resumen</button>
+    <button class="tab" data-tab="reservas" type="button">📅 Reservas <span class="count" id="cRes"></span></button>
+    <button class="tab" data-tab="servicios" type="button">🛠️ Servicios <span class="count" id="cSvc"></span></button>
+    <button class="tab" data-tab="trabajos" type="button">🖼️ Trabajos <span class="count" id="cWrk"></span></button>
+    <button class="tab" data-tab="usuarios" type="button">👥 Usuarios <span class="count" id="cUsr"></span></button>
+    <div class="side-foot">
+      <span id="who"></span>
+      <a href="index.html">Ver sitio</a>
+      <button id="logout" type="button">Salir</button>
+    </div>
+  </aside>
 
-<div class="grid">
-  <section class="card">
-    <h2>Catálogo</h2>
-    <form id="catForm">
-      <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px">
-        <div><label>Título</label><input id="title"></div>
-        <div><label>Categoría</label><input id="category" value="General"></div>
-        <div style="grid-column:1/-1"><label>Descripción</label><textarea id="description" rows="2"></textarea></div>
-        <div><label>Imagen URL</label><input id="image_url" placeholder="https://..."></div>
-        <div><label>Desde</label><input id="price_from" placeholder="$"></div>
+  <main>
+    <!-- RESUMEN -->
+    <section data-panel="resumen">
+      <h1>Resumen</h1>
+      <p class="sub">Lo más importante de un vistazo.</p>
+      <div class="stats">
+        <div class="card stat acc"><div class="n" id="stToday">0</div><div class="l">Visitas hoy</div></div>
+        <div class="card stat"><div class="n" id="stWeek">0</div><div class="l">Próximos 7 días</div></div>
+        <div class="card stat warn"><div class="n" id="stUnassigned">0</div><div class="l">Sin trabajador asignado</div></div>
+        <div class="card stat ok"><div class="n" id="stDone">0</div><div class="l">Realizadas este mes</div></div>
       </div>
-      <div style="margin-top:10px"><button>Agregar</button></div>
-    </form>
-    <table style="margin-top:10px">
-      <thead><tr><th>Título</th><th>Categoría</th><th>Desde</th><th></th></tr></thead>
-      <tbody id="cat"></tbody>
-    </table>
-  </section>
+      <div class="two" style="grid-template-columns:1fr 1fr">
+        <div class="card"><h3>Próximas visitas</h3><div class="next" id="nextList"></div></div>
+        <div class="card">
+          <h3>Accesos rápidos</h3>
+          <div style="display:grid; gap:10px">
+            <button class="btn ghost" data-go="reservas" data-filter="unassigned" type="button">Asignar trabajadores pendientes</button>
+            <button class="btn ghost" data-go="servicios" type="button">Agregar un servicio</button>
+            <button class="btn ghost" data-go="trabajos" type="button">Publicar un trabajo realizado</button>
+            <button class="btn ghost" data-go="usuarios" type="button">Crear un trabajador</button>
+            <button class="btn ghost" id="exportCsv2" type="button">Descargar reservas (CSV / Excel)</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <section class="card">
-    <h2>Reservas</h2>
-    <table>
-      <thead><tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Cliente</th><th>Dirección</th><th>Estado</th><th></th></tr></thead>
-      <tbody id="res"></tbody>
-    </table>
-  </section>
+    <!-- RESERVAS -->
+    <section data-panel="reservas" hidden>
+      <h1>Reservas</h1>
+      <p class="sub">Asigna trabajador, cambia el estado o elimina visitas.</p>
+      <div class="toolbar">
+        <input class="grow" id="fText" type="search" placeholder="Buscar cliente, correo, dirección o nota…" aria-label="Buscar">
+        <select id="fStatus" aria-label="Estado" style="width:auto">
+          <option value="">Todos los estados</option>
+          <option value="scheduled">Agendada</option><option value="in_progress">En curso</option>
+          <option value="done">Realizada</option><option value="canceled">Cancelada</option>
+        </select>
+        <select id="fWhen" aria-label="Fecha" style="width:auto">
+          <option value="">Todas las fechas</option><option value="today">Hoy</option>
+          <option value="upcoming">Próximas</option><option value="past">Pasadas</option>
+        </select>
+        <label style="display:flex; gap:6px; align-items:center; font-weight:600"><input type="checkbox" id="fUnassigned" style="width:auto"> Sin asignar</label>
+        <button class="btn ghost" id="exportCsv" type="button">Descargar CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Cliente</th><th>Servicio / tipo</th><th>Dirección y notas</th><th>Trabajador</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="resBody"></tbody>
+        </table>
+      </div>
+      <p class="muted" id="resCount" style="margin-top:8px"></p>
+    </section>
+
+    <!-- SERVICIOS -->
+    <section data-panel="servicios" hidden>
+      <h1>Servicios</h1>
+      <p class="sub">Lo que aparece en la sección "Servicios" del sitio. Las imágenes se agregan por URL.</p>
+      <div class="two">
+        <form class="card" id="svcForm">
+          <h3 id="svcFormTitle">Nuevo servicio</h3>
+          <div class="preview" id="svcPrev">Vista previa de la imagen</div>
+          <div class="field"><label for="svcImg">Imagen (URL)</label><input id="svcImg" type="url" placeholder="https://…"></div>
+          <div class="field"><label for="svcTitle">Título</label><input id="svcTitle" required maxlength="120"></div>
+          <div class="row2">
+            <div class="field"><label for="svcCat">Categoría</label><input id="svcCat" list="cats" value="General" maxlength="60"></div>
+            <div class="field"><label for="svcPrice">Precio desde</label><input id="svcPrice" placeholder="$150.000+" maxlength="40"></div>
+          </div>
+          <datalist id="cats"></datalist>
+          <div class="field"><label for="svcDesc">Descripción</label><textarea id="svcDesc" maxlength="500"></textarea></div>
+          <div style="display:flex; gap:8px">
+            <button class="btn" type="submit" id="svcSave">Agregar</button>
+            <button class="btn ghost" type="button" id="svcCancel" hidden>Cancelar edición</button>
+          </div>
+        </form>
+        <div>
+          <div class="toolbar"><input class="grow" id="svcSearch" type="search" placeholder="Buscar servicio…" aria-label="Buscar servicio"></div>
+          <div class="items" id="svcList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRABAJOS -->
+    <section data-panel="trabajos" hidden>
+      <h1>Trabajos realizados</h1>
+      <p class="sub">La galería que ven los clientes en el sitio. Las imágenes se agregan por URL.</p>
+      <div class="two">
+        <form class="card" id="wrkForm">
+          <h3 id="wrkFormTitle">Nuevo trabajo</h3>
+          <div class="preview" id="wrkPrev">Vista previa de la imagen</div>
+          <div class="field"><label for="wrkImg">Imagen (URL)</label><input id="wrkImg" type="url" placeholder="https://…"></div>
+          <div class="field"><label for="wrkTitle">Título</label><input id="wrkTitle" required maxlength="120"></div>
+          <div class="row2">
+            <div class="field"><label for="wrkPlace">Comuna / lugar</label><input id="wrkPlace" maxlength="120"></div>
+            <div class="field"><label for="wrkYear">Año</label><input id="wrkYear" inputmode="numeric" maxlength="4" placeholder="2026"></div>
+          </div>
+          <div class="field"><label for="wrkDesc">Descripción</label><textarea id="wrkDesc" maxlength="500"></textarea></div>
+          <div style="display:flex; gap:8px">
+            <button class="btn" type="submit" id="wrkSave">Publicar</button>
+            <button class="btn ghost" type="button" id="wrkCancel" hidden>Cancelar edición</button>
+          </div>
+        </form>
+        <div class="items" id="wrkList"></div>
+      </div>
+    </section>
+
+    <!-- USUARIOS -->
+    <section data-panel="usuarios" hidden>
+      <h1>Usuarios</h1>
+      <p class="sub">Crea trabajadores o administradores y cambia roles. Los clientes se registran solos desde el sitio.</p>
+      <div class="two">
+        <form class="card" id="usrForm">
+          <h3>Nuevo usuario</h3>
+          <div class="field"><label for="usrName">Nombre</label><input id="usrName" required maxlength="80"></div>
+          <div class="field"><label for="usrEmail">Correo</label><input id="usrEmail" type="email" required></div>
+          <div class="field"><label for="usrPass">Contraseña (mín. 6)</label><input id="usrPass" type="password" minlength="6" required autocomplete="new-password"></div>
+          <div class="field"><label for="usrRole">Rol</label>
+            <select id="usrRole"><option value="worker">Trabajador</option><option value="admin">Administrador</option></select></div>
+          <button class="btn" type="submit">Crear usuario</button>
+        </form>
+        <div>
+          <div class="toolbar">
+            <input class="grow" id="usrSearch" type="search" placeholder="Buscar usuario…" aria-label="Buscar usuario">
+            <select id="usrFilter" style="width:auto" aria-label="Filtrar rol">
+              <option value="">Todos</option><option value="admin">Administradores</option>
+              <option value="worker">Trabajadores</option><option value="client">Clientes</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table style="min-width:560px">
+              <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th></th></tr></thead>
+              <tbody id="usrBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 </div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="./api.js"></script>
 <script>
-async function me(){ return (await API.get('/api/me')).user; }
-async function catalog(){ return await API.get('/api/catalog'); }
-async function resAll(){ return await API.get('/api/reservations/admin'); }
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const STATUS = { scheduled:'Agendada', in_progress:'En curso', done:'Realizada', canceled:'Cancelada' };
+  const KIND = { cotizacion:'Cotización', trabajo:'Trabajo' };
+  const ROLE = { admin:'Administrador', worker:'Trabajador', client:'Cliente' };
+  const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const pad = (n) => String(n).padStart(2,'0');
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+  const addDays = (iso, n) => { const d = new Date(iso + 'T12:00'); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+  const nice = (iso) => { const [y,m,d] = iso.split('-').map(Number); return `${d} ${MONTHS[m-1]} ${y}`; };
 
-async function boot(){
-  const token = API.getToken(); if(!token){ location.href='index.html'; return; }
-  try{
-    const u = await me();
-    if(u.role!=='admin'){ location.href='app.html'; return; }
-    who.textContent = u.name+' ('+u.role+')';
-    renderCatalog(await catalog());
-    renderRes(await resAll());
+  let me = null, reservations = [], services = [], works = [], users = [];
+  let editSvc = null, editWrk = null;
 
-    catForm.onsubmit = async (e)=>{
-      e.preventDefault();
-      try{
-        await API.post('/api/catalog', {
-          title: title.value.trim()||'Servicio',
-          category: category.value.trim()||'General',
-          description: description.value.trim()||'',
-          image_url: image_url.value.trim()||'',
-          price_from: price_from.value.trim()||''
-        });
-        renderCatalog(await catalog());
-        e.target.reset();
-      }catch(err){ alert(err.error||'Error al agregar'); }
-    };
-    document.getElementById('logout').onclick = ()=>{
-      localStorage.removeItem('mm-token');
-      location.href='index.html';
-    };
-  }catch(e){
-    localStorage.removeItem('mm-token');
-    location.href='index.html';
+  // ---------- utilidades ----------
+  let toastTimer;
+  function toast(text, isErr) {
+    const t = $('toast'); t.textContent = text; t.classList.toggle('err', !!isErr); t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
   }
-}
-
-function renderCatalog(items){
-  cat.innerHTML='';
-  for(const it of items){
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${it.title}</td><td>${it.category}</td><td>${it.price_from||''}</td><td><button data-id="${it.id}">Eliminar</button></td>`;
-    cat.appendChild(tr);
+  async function act(fn, okText) {
+    try { await fn(); if (okText) toast(okText); }
+    catch (e) { toast(e.error || 'Ocurrió un error', true); if (e.status === 401) location.href = 'index.html'; }
   }
-  cat.querySelectorAll('button[data-id]').forEach(b => {
-    b.onclick = async ()=>{
-      try{
-        await API.del('/api/catalog/'+b.dataset.id);
-        renderCatalog(await catalog());
-      }catch(err){ alert(err.error||'No se pudo eliminar'); }
-    };
+  // Botón eliminar en dos clics (sin ventanas emergentes)
+  function confirmClick(btn, run) {
+    if (btn.classList.contains('sure')) { run(); return; }
+    const old = btn.textContent; btn.classList.add('sure'); btn.textContent = '¿Seguro?';
+    setTimeout(() => { btn.classList.remove('sure'); btn.textContent = old; }, 3000);
+  }
+  function imgPreview(input, box) {
+    const url = input.value.trim();
+    box.innerHTML = url ? `<img src="${esc(url)}" alt="Vista previa" onerror="if(this.parentNode)this.parentNode.textContent='No se pudo cargar la imagen (revisa la URL)'">` : 'Vista previa de la imagen';
+  }
+
+  // ---------- navegación ----------
+  function show(tab) {
+    if (!document.querySelector(`[data-panel="${tab}"]`)) tab = 'resumen';
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+    document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== tab);
+    try { localStorage.setItem('mm-admin-tab', tab); } catch {}
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => show(t.dataset.tab));
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
+    if (b.dataset.filter === 'unassigned') { $('fUnassigned').checked = true; $('fStatus').value = 'scheduled'; renderRes(); }
+    show(b.dataset.go);
   });
-}
 
-function renderRes(items){
-  res.innerHTML='';
-  for(const r of items){
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.date}</td><td>${r.time}</td><td>${r.service_title||''}</td><td>${r.customer_name||''} (${r.customer_email||''})</td><td>${r.address||''}</td><td>${r.status}</td><td><button data-id="${r.id}">Eliminar</button></td>`;
-    res.appendChild(tr);
+  // ---------- carga ----------
+  async function loadAll() {
+    [reservations, services, works, users] = await Promise.all([
+      API.get('/api/reservations/admin'), API.get('/api/catalog'), API.get('/api/works'), API.get('/api/users'),
+    ]);
+    renderAll();
   }
-  res.querySelectorAll('button[data-id]').forEach(b => {
-    b.onclick = async ()=>{
-      try{
-        await API.del('/api/reservations/'+b.dataset.id);
-        renderRes(await resAll());
-      }catch(err){ alert(err.error||'No se pudo eliminar'); }
-    };
-  });
-}
+  function renderAll() {
+    $('cRes').textContent = reservations.filter(r => r.status === 'scheduled').length || '';
+    $('cSvc').textContent = services.length || ''; $('cWrk').textContent = works.length || ''; $('cUsr').textContent = users.length || '';
+    renderSummary(); renderRes(); renderSvc(); renderWrk(); renderUsr();
+  }
 
-boot();
+  // ---------- resumen ----------
+  function renderSummary() {
+    const t = today(), week = addDays(t, 7), ym = t.slice(0, 7);
+    const active = reservations.filter(r => r.status !== 'canceled');
+    $('stToday').textContent = active.filter(r => r.date === t).length;
+    $('stWeek').textContent = active.filter(r => r.date >= t && r.date <= week).length;
+    $('stUnassigned').textContent = active.filter(r => !r.worker_id && r.date >= t && r.status === 'scheduled').length;
+    $('stDone').textContent = reservations.filter(r => r.status === 'done' && r.date.startsWith(ym)).length;
+    const next = active.filter(r => r.date >= t && r.status !== 'done').slice(0, 6);
+    $('nextList').innerHTML = next.length ? next.map(r => `
+      <div class="v">
+        <div><strong>${nice(r.date)} · ${esc(r.time)}</strong><div class="muted">${esc(r.customer_name || 'Cliente')} · ${esc(r.address || '')}</div></div>
+        <div style="text-align:right"><span class="pill s-${r.status}">${STATUS[r.status]}</span><div class="muted">${r.worker_name ? esc(r.worker_name) : '<span style="color:var(--warn)">Sin asignar</span>'}</div></div>
+      </div>`).join('') : '<p class="empty">No hay visitas próximas.</p>';
+  }
+
+  // ---------- reservas ----------
+  function filteredRes() {
+    const q = $('fText').value.trim().toLowerCase(), st = $('fStatus').value, when = $('fWhen').value, un = $('fUnassigned').checked, t = today();
+    return reservations.filter(r => {
+      if (st && r.status !== st) return false;
+      if (un && r.worker_id) return false;
+      if (when === 'today' && r.date !== t) return false;
+      if (when === 'upcoming' && r.date < t) return false;
+      if (when === 'past' && r.date >= t) return false;
+      if (q && ![r.customer_name, r.customer_email, r.address, r.notes, r.service_title].join(' ').toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }
+  function renderRes() {
+    const list = filteredRes();
+    const workers = users.filter(u => u.role === 'worker');
+    $('resBody').innerHTML = list.length ? list.map(r => `
+      <tr>
+        <td><strong>${nice(r.date)}</strong><div class="muted">${esc(r.time)}</div></td>
+        <td>${esc(r.customer_name || '—')}<div class="muted">${esc(r.customer_email || '')}</div></td>
+        <td>${esc(r.service_title || 'Por definir')}<div class="muted">${KIND[r.kind] || 'Visita'}</div></td>
+        <td>${esc(r.address || '')}${r.notes ? `<div class="muted">${esc(r.notes)}</div>` : ''}</td>
+        <td><select data-assign="${r.id}" aria-label="Trabajador">
+          <option value="">Sin asignar</option>
+          ${workers.map(w => `<option value="${w.id}" ${w.id === r.worker_id ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}
+        </select></td>
+        <td><select data-status="${r.id}" aria-label="Estado">
+          ${Object.entries(STATUS).map(([k,v]) => `<option value="${k}" ${k === r.status ? 'selected' : ''}>${v}</option>`).join('')}
+        </select></td>
+        <td><button class="btn danger sm" data-delres="${r.id}" type="button">Eliminar</button></td>
+      </tr>`).join('') : '<tr><td colspan="7" class="empty">No hay reservas con esos filtros.</td></tr>';
+    $('resCount').textContent = `${list.length} de ${reservations.length} reservas`;
+  }
+  ['fText','fStatus','fWhen','fUnassigned'].forEach(id => $(id).addEventListener('input', renderRes));
+
+  $('resBody').addEventListener('change', (e) => {
+    const a = e.target.closest('select[data-assign]'), s = e.target.closest('select[data-status]');
+    if (a) act(async () => { await API.patch(`/api/reservations/${a.dataset.assign}/assign`, { worker_id: a.value ? Number(a.value) : null }); await loadAll(); }, 'Trabajador asignado');
+    if (s) act(async () => { await API.patch(`/api/reservations/${s.dataset.status}/status`, { status: s.value }); await loadAll(); }, 'Estado actualizado');
+  });
+  $('resBody').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-delres]');
+    if (b) confirmClick(b, () => act(async () => { await API.del('/api/reservations/' + b.dataset.delres); await loadAll(); }, 'Reserva eliminada'));
+  });
+
+  function exportCsv() {
+    const rows = [['Fecha','Hora','Cliente','Correo','Servicio','Tipo','Dirección','Notas','Trabajador','Estado']]
+      .concat(filteredRes().map(r => [r.date, r.time, r.customer_name, r.customer_email, r.service_title, KIND[r.kind] || '', r.address, r.notes, r.worker_name || '', STATUS[r.status] || r.status]));
+    const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(';')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `reservas-${today()}.csv`; a.click();
+    toast('Archivo descargado');
+  }
+  $('exportCsv').onclick = exportCsv; $('exportCsv2').onclick = exportCsv;
+
+  // ---------- servicios ----------
+  function renderSvc() {
+    const q = $('svcSearch').value.trim().toLowerCase();
+    const list = services.filter(s => !q || [s.title, s.category, s.description].join(' ').toLowerCase().includes(q));
+    $('cats').innerHTML = [...new Set(services.map(s => s.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
+    $('svcList').innerHTML = list.length ? list.map(s => `
+      <div class="item">
+        <div class="img">${s.image_url ? `<img src="${esc(s.image_url)}" alt="${esc(s.title)}" loading="lazy">` : 'Sin imagen'}</div>
+        <div class="body"><span class="tag">${esc(s.category || 'General')}</span><div style="font-weight:700; margin-top:6px">${esc(s.title)}</div>
+          <div class="muted">${esc(s.description || '')}</div><div style="font-weight:800; color:var(--acc); margin-top:6px">${esc(s.price_from || '')}</div></div>
+        <div class="acts"><button class="btn ghost sm" data-editsvc="${s.id}" type="button">Editar</button><button class="btn danger sm" data-delsvc="${s.id}" type="button">Eliminar</button></div>
+      </div>`).join('') : '<p class="empty">No hay servicios.</p>';
+  }
+  $('svcSearch').addEventListener('input', renderSvc);
+  $('svcImg').addEventListener('input', () => imgPreview($('svcImg'), $('svcPrev')));
+  function resetSvc() {
+    editSvc = null; $('svcForm').reset(); $('svcCat').value = 'General'; imgPreview($('svcImg'), $('svcPrev'));
+    $('svcFormTitle').textContent = 'Nuevo servicio'; $('svcSave').textContent = 'Agregar'; $('svcCancel').hidden = true;
+  }
+  $('svcCancel').onclick = resetSvc;
+  $('svcList').addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-editsvc]'), del = e.target.closest('[data-delsvc]');
+    if (ed) {
+      const s = services.find(x => x.id === Number(ed.dataset.editsvc)); editSvc = s.id;
+      $('svcTitle').value = s.title || ''; $('svcCat').value = s.category || ''; $('svcPrice').value = s.price_from || '';
+      $('svcDesc').value = s.description || ''; $('svcImg').value = s.image_url || ''; imgPreview($('svcImg'), $('svcPrev'));
+      $('svcFormTitle').textContent = 'Editar servicio'; $('svcSave').textContent = 'Guardar cambios'; $('svcCancel').hidden = false;
+      $('svcForm').scrollIntoView({ behavior: 'smooth' });
+    }
+    if (del) confirmClick(del, () => act(async () => { await API.del('/api/catalog/' + del.dataset.delsvc); await loadAll(); }, 'Servicio eliminado'));
+  });
+  $('svcForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const body = { title: $('svcTitle').value.trim(), category: $('svcCat').value.trim(), price_from: $('svcPrice').value.trim(),
+      description: $('svcDesc').value.trim(), image_url: $('svcImg').value.trim() };
+    act(async () => {
+      if (editSvc) await API.patch('/api/catalog/' + editSvc, body); else await API.post('/api/catalog', body);
+      resetSvc(); await loadAll();
+    }, editSvc ? 'Servicio actualizado' : 'Servicio agregado');
+  });
+
+  // ---------- trabajos ----------
+  function renderWrk() {
+    $('wrkList').innerHTML = works.length ? works.map(w => `
+      <div class="item">
+        <div class="img">${w.image_url ? `<img src="${esc(w.image_url)}" alt="${esc(w.title)}" loading="lazy">` : 'Sin imagen'}</div>
+        <div class="body"><span class="tag">${esc([w.year, w.place].filter(Boolean).join(' · ') || 'Trabajo')}</span>
+          <div style="font-weight:700; margin-top:6px">${esc(w.title)}</div><div class="muted">${esc(w.description || '')}</div></div>
+        <div class="acts"><button class="btn ghost sm" data-editwrk="${w.id}" type="button">Editar</button><button class="btn danger sm" data-delwrk="${w.id}" type="button">Eliminar</button></div>
+      </div>`).join('') : '<p class="empty">Aún no hay trabajos publicados.</p>';
+  }
+  $('wrkImg').addEventListener('input', () => imgPreview($('wrkImg'), $('wrkPrev')));
+  function resetWrk() {
+    editWrk = null; $('wrkForm').reset(); imgPreview($('wrkImg'), $('wrkPrev'));
+    $('wrkFormTitle').textContent = 'Nuevo trabajo'; $('wrkSave').textContent = 'Publicar'; $('wrkCancel').hidden = true;
+  }
+  $('wrkCancel').onclick = resetWrk;
+  $('wrkList').addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-editwrk]'), del = e.target.closest('[data-delwrk]');
+    if (ed) {
+      const w = works.find(x => x.id === Number(ed.dataset.editwrk)); editWrk = w.id;
+      $('wrkTitle').value = w.title || ''; $('wrkPlace').value = w.place || ''; $('wrkYear').value = w.year || '';
+      $('wrkDesc').value = w.description || ''; $('wrkImg').value = w.image_url || ''; imgPreview($('wrkImg'), $('wrkPrev'));
+      $('wrkFormTitle').textContent = 'Editar trabajo'; $('wrkSave').textContent = 'Guardar cambios'; $('wrkCancel').hidden = false;
+      $('wrkForm').scrollIntoView({ behavior: 'smooth' });
+    }
+    if (del) confirmClick(del, () => act(async () => { await API.del('/api/works/' + del.dataset.delwrk); await loadAll(); }, 'Trabajo eliminado'));
+  });
+  $('wrkForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const body = { title: $('wrkTitle').value.trim(), place: $('wrkPlace').value.trim(), year: $('wrkYear').value.trim(),
+      description: $('wrkDesc').value.trim(), image_url: $('wrkImg').value.trim() };
+    act(async () => {
+      if (editWrk) await API.patch('/api/works/' + editWrk, body); else await API.post('/api/works', body);
+      resetWrk(); await loadAll();
+    }, editWrk ? 'Trabajo actualizado' : 'Trabajo publicado');
+  });
+
+  // ---------- usuarios ----------
+  function renderUsr() {
+    const q = $('usrSearch').value.trim().toLowerCase(), f = $('usrFilter').value;
+    const list = users.filter(u => (!f || u.role === f) && (!q || (u.name + ' ' + u.email).toLowerCase().includes(q)));
+    $('usrBody').innerHTML = list.length ? list.map(u => {
+      const self = u.id === me.id;
+      return `<tr>
+        <td><strong>${esc(u.name)}</strong>${self ? ' <span class="muted">(tú)</span>' : ''}</td>
+        <td>${esc(u.email)}</td>
+        <td>${self ? `<span class="pill r-${u.role}">${ROLE[u.role]}</span>` : `<select data-role="${u.id}" aria-label="Rol">
+          ${Object.entries(ROLE).map(([k,v]) => `<option value="${k}" ${k === u.role ? 'selected' : ''}>${v}</option>`).join('')}</select>`}</td>
+        <td>${self ? '' : `<button class="btn danger sm" data-delusr="${u.id}" type="button">Eliminar</button>`}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="4" class="empty">No hay usuarios.</td></tr>';
+  }
+  $('usrSearch').addEventListener('input', renderUsr); $('usrFilter').addEventListener('input', renderUsr);
+  $('usrBody').addEventListener('change', (e) => {
+    const s = e.target.closest('select[data-role]');
+    if (s) act(async () => { await API.patch(`/api/users/${s.dataset.role}/role`, { role: s.value }); await loadAll(); }, 'Rol actualizado');
+  });
+  $('usrBody').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-delusr]');
+    if (b) confirmClick(b, () => act(async () => { await API.del('/api/users/' + b.dataset.delusr); await loadAll(); }, 'Usuario eliminado'));
+  });
+  $('usrForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    act(async () => {
+      await API.post('/api/users', { name: $('usrName').value.trim(), email: $('usrEmail').value.trim(), password: $('usrPass').value, role: $('usrRole').value });
+      $('usrForm').reset(); await loadAll();
+    }, 'Usuario creado');
+  });
+
+  $('logout').onclick = () => { API.setToken(''); location.href = 'index.html'; };
+
+  // ---------- inicio ----------
+  (async function boot() {
+    if (!API.getToken()) { location.href = 'index.html'; return; }
+    try { me = (await API.get('/api/me')).user; } catch { API.setToken(''); location.href = 'index.html'; return; }
+    if (me.role !== 'admin') { location.href = 'app.html'; return; }
+    $('who').textContent = me.name;
+    let tab = 'resumen'; try { tab = localStorage.getItem('mm-admin-tab') || 'resumen'; } catch {}
+    show(tab);
+    await act(loadAll);
+  })();
+})();
 </script>
 </body>
 </html>

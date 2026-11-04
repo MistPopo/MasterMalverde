@@ -29,15 +29,16 @@ async function seed() {
   ];
   for (const [n, e, r] of users) await run('INSERT INTO users(name,email,password_hash,role) VALUES (?,?,?,?)', [n, e, pass, r]);
 
+  // Imágenes por URL, igual que en la versión original
   const services = [
-    ['Remodelación de cocina', 'Obra menor', 'Optimización de espacio y terminaciones.', '$1.500.000+'],
-    ['Cambio de tablero eléctrico', 'Electricidad', 'Normalización SEC y protecciones.', '$250.000+'],
-    ['Pintura exterior', 'Pintura', 'Lavado, sellos y pintura esmalte.', '$450.000+'],
-    ['Impermeabilización de techumbre', 'Estructuras', 'Detección de filtraciones y reparación de techos.', '$600.000+'],
-    ['Gasfitería integral', 'Gasfitería', 'Reparaciones y diagnóstico de fugas.', '$120.000+'],
+    ['Remodelación de cocina', 'Obra menor', 'Optimización de espacio y terminaciones.', 'https://images.unsplash.com/photo-1507089947368-19c1da9775ae', '$1.500.000+'],
+    ['Cambio de tablero eléctrico', 'Electricidad', 'Normalización SEC y protecciones.', 'https://images.unsplash.com/photo-1581092795360-1b92f5a97f3e', '$250.000+'],
+    ['Pintura exterior casa', 'Pintura', 'Lavado, sellos y pintura esmalte.', 'https://images.unsplash.com/photo-1499951360447-b19be8fe80f5', '$450.000+'],
+    ['Impermeabilización de techumbre', 'Estructuras', 'Detección de filtraciones y reparación de techos.', 'https://images.unsplash.com/photo-1503387762-592deb58ef4e', '$600.000+'],
+    ['Gasfitería integral', 'Gasfitería', 'Reparaciones y diagnóstico de fugas.', 'https://images.unsplash.com/photo-1581578017425-ec07294e8550', '$120.000+'],
   ];
-  for (const [t, c, d, p] of services) {
-    await run('INSERT INTO services(title,category,description,image_url,price_from) VALUES (?,?,?,?,?)', [t, c, d, '', p]);
+  for (const [t, c, d, img, p] of services) {
+    await run('INSERT INTO services(title,category,description,image_url,price_from) VALUES (?,?,?,?,?)', [t, c, d, img, p]);
   }
 
   const works = [

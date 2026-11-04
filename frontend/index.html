@@ -228,13 +228,14 @@
       const [works, services] = await Promise.all([API.get('/api/works'), API.get('/api/catalog')]);
       $('works').innerHTML = works.length ? works.map(w => `
         <article class="card work">
-          <div class="thumb">${w.image_url ? `<img src="${w.image_url}" alt="${w.title}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">` : 'Foto del trabajo'}</div>
+          <div class="thumb">${w.image_url ? `<img src="${w.image_url}" alt="${w.title}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:12px">` : 'Foto del trabajo'}</div>
           <span class="tag">${w.year || ''}${w.place ? ' · ' + w.place : ''}</span>
           <strong>${w.title}</strong>
           <p class="hint" style="margin:6px 0 0">${w.description || ''}</p>
         </article>`).join('') : '<p class="empty">Pronto publicaremos nuestros trabajos.</p>';
       $('services').innerHTML = services.map(s => `
-        <article class="card">
+        <article class="card work">
+          <div class="thumb">${s.image_url ? `<img src="${s.image_url}" alt="${s.title}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:12px">` : 'Sin imagen'}</div>
           <span class="tag">${s.category || 'General'}</span>
           <strong>${s.title}</strong>
           <p class="hint" style="margin:6px 0 0">${s.description || ''}</p>
@@ -369,6 +370,8 @@
 
   async function afterAuth(res) {
     API.setToken(res.token); user = res.user; closeAuth(); refreshNav();
+    // Como antes: el administrador entra directo a su panel
+    if (user.role === 'admin' && !selTime) { location.href = 'admin.html'; return; }
     if (selTime) showForm();
   }
   $('loginForm').addEventListener('submit', async (e) => {
@@ -385,6 +388,8 @@
   function refreshNav() {
     $('navAuth').textContent = user ? 'Salir' : 'Ingresar';
     $('navMine').hidden = !user;
+    $('navMine').textContent = user?.role === 'admin' ? 'Panel admin' : 'Mis citas';
+    $('navMine').href = user?.role === 'admin' ? 'admin.html' : 'app.html';
   }
   $('navAuth').onclick = () => {
     if (user) { API.setToken(''); user = null; refreshNav(); if (selTime) showForm(); }

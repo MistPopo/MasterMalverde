@@ -27,6 +27,11 @@
   .empty{color:var(--muted); padding:16px 0}
   .msg{min-height:22px; color:var(--bad); font-size:14px}
   section{margin-bottom:28px}
+  [hidden]{display:none!important}
+  .photo-wrap{display:grid; gap:12px; grid-template-columns:repeat(2,minmax(220px,1fr)); background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px}
+  .photo-box{border:1px dashed var(--line); border-radius:12px; min-height:180px; display:grid; place-items:center; overflow:hidden; color:var(--muted); font-size:14px}
+  .photo-box img{max-width:100%; max-height:260px; display:block}
+  @media (max-width:640px){ .photo-wrap{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -44,9 +49,21 @@
 <main class="wrap">
   <section>
     <h1>Mis citas</h1>
-    <p class="sub">Tus visitas agendadas. Puedes cancelar las que aún no se realizan.</p>
+    <p class="sub">Tus visitas agendadas. Puedes eliminar las que aún no se realizan.</p>
     <p id="msg" class="msg" role="alert"></p>
     <div id="mine" class="list"></div>
+  </section>
+
+  <section>
+    <h1>Fotoreferencias</h1>
+    <p class="sub">Carga fotos de referencia del trabajo (fachada, sector a intervenir, etc.).</p>
+    <div class="photo-wrap">
+      <div class="photo-box"><span id="photoEmpty">Sin imagen</span><img id="photoPrev" alt="Previsualización" hidden></div>
+      <div>
+        <label for="photoInput" style="font-weight:700">Subir imagen (JPG/PNG)</label>
+        <input id="photoInput" type="file" accept="image/*" style="display:block; margin-top:8px">
+      </div>
+    </div>
   </section>
 
   <section id="workerPanel" hidden>
@@ -85,7 +102,7 @@
   async function loadMine() {
     const list = await API.get('/api/reservations/mine');
     $('mine').innerHTML = list.length ? list.map(r => card(r,
-      r.status === 'scheduled' ? `<button class="btn danger" data-cancel="${r.id}" type="button">Cancelar</button>` : ''
+      r.status === 'scheduled' ? `<button class="btn danger" data-cancel="${r.id}" type="button">Eliminar</button>` : ''
     )).join('') : '<p class="empty">Aún no tienes citas. <a href="index.html#agendar">Agenda tu primera visita</a>.</p>';
   }
 
@@ -111,6 +128,14 @@
     msg('');
     try { await API.patch('/api/reservations/' + s.dataset.status + '/status', { status: s.value }); await loadAssigned(); }
     catch (err) { msg(err.error); }
+  });
+
+  // Fotoreferencias (previsualización local, como en la versión original)
+  $('photoInput').addEventListener('change', () => {
+    const f = $('photoInput').files?.[0];
+    const prev = $('photoPrev');
+    if (!f) { prev.hidden = true; prev.src = ''; $('photoEmpty').hidden = false; return; }
+    prev.src = URL.createObjectURL(f); prev.hidden = false; $('photoEmpty').hidden = true;
   });
 
   $('logout').onclick = () => { API.setToken(''); location.href = 'index.html'; };
