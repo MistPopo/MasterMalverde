@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M.Malv | Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0; font-family:Inter; background:#0f172a; color:#e5e7eb}
+  header{display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#111827; border-bottom:1px solid rgba(255,255,255,.08)}
+  .grid{display:grid; gap:16px; grid-template-columns:1fr 1fr; padding:16px}
+  .card{background:#1f2937; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px}
+  input,select,textarea{width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#0b1226; color:#e5e7eb}
+  button{padding:10px 12px; border-radius:10px; border:0; font-weight:700; cursor:pointer; background:#f59e0b; color:#111827}
+  table{width:100%; border-collapse:collapse} th,td{padding:8px; border-bottom:1px solid rgba(255,255,255,.12); text-align:left}
+  .badge{display:inline-flex; align-items:center; gap:6px; background:#111827; border:1px solid rgba(255,255,255,.12); color:#e5e7eb; padding:6px 10px; border-radius:999px; font-size:12px}
+  @media (max-width: 900px){ .grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex; align-items:center; gap:10px">
+    <div style="width:28px; height:28px; border-radius:8px; background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#1f1f1f 10px,#1f1f1f 20px)"></div>
+    <strong>MasterMalverde — Admin</strong>
+  </div>
+  <div>
+    <span id="who" class="badge"></span>
+    <button id="logout">Salir</button>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="card">
+    <h2>Catálogo</h2>
+    <form id="catForm">
+      <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px">
+        <div><label>Título</label><input id="title"></div>
+        <div><label>Categoría</label><input id="category" value="General"></div>
+        <div style="grid-column:1/-1"><label>Descripción</label><textarea id="description" rows="2"></textarea></div>
+        <div><label>Imagen URL</label><input id="image_url" placeholder="https://..."></div>
+        <div><label>Desde</label><input id="price_from" placeholder="$"></div>
+      </div>
+      <div style="margin-top:10px"><button>Agregar</button></div>
+    </form>
+    <table style="margin-top:10px">
+      <thead><tr><th>Título</th><th>Categoría</th><th>Desde</th><th></th></tr></thead>
+      <tbody id="cat"></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Reservas</h2>
+    <table>
+      <thead><tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Cliente</th><th>Dirección</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="res"></tbody>
+    </table>
+  </section>
+</div>
+
+<script src="./api.js"></script>
+<script>
+async function me(){ return (await API.get('/api/me')).user; }
+async function catalog(){ return await API.get('/api/catalog'); }
+async function resAll(){ return await API.get('/api/reservations/admin'); }
+
+async function boot(){
+  const token = API.getToken(); if(!token){ location.href='index.html'; return; }
+  try{
+    const u = await me();
+    if(u.role!=='admin'){ location.href='app.html'; return; }
+    who.textContent = u.name+' ('+u.role+')';
+    renderCatalog(await catalog());
+    renderRes(await resAll());
+
+    catForm.onsubmit = async (e)=>{
+      e.preventDefault();
+      try{
+        await API.post('/api/catalog', {
+          title: title.value.trim()||'Servicio',
+          category: category.value.trim()||'General',
+          description: description.value.trim()||'',
+          image_url: image_url.value.trim()||'',
+          price_from: price_from.value.trim()||''
+        });
+        renderCatalog(await catalog());
+        e.target.reset();
+      }catch(err){ alert(err.error||'Error al agregar'); }
+    };
+    document.getElementById('logout').onclick = ()=>{
+      localStorage.removeItem('mm-token');
+      location.href='index.html';
+    };
+  }catch(e){
+    localStorage.removeItem('mm-token');
+    location.href='index.html';
+  }
+}
+
+function renderCatalog(items){
+  cat.innerHTML='';
+  for(const it of items){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${it.title}</td><td>${it.category}</td><td>${it.price_from||''}</td><td><button data-id="${it.id}">Eliminar</button></td>`;
+    cat.appendChild(tr);
+  }
+  cat.querySelectorAll('button[data-id]').forEach(b => {
+    b.onclick = async ()=>{
+      try{
+        await API.del('/api/catalog/'+b.dataset.id);
+        renderCatalog(await catalog());
+      }catch(err){ alert(err.error||'No se pudo eliminar'); }
+    };
+  });
+}
+
+function renderRes(items){
+  res.innerHTML='';
+  for(const r of items){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.date}</td><td>${r.time}</td><td>${r.service_title||''}</td><td>${r.customer_name||''} (${r.customer_email||''})</td><td>${r.address||''}</td><td>${r.status}</td><td><button data-id="${r.id}">Eliminar</button></td>`;
+    res.appendChild(tr);
+  }
+  res.querySelectorAll('button[data-id]').forEach(b => {
+    b.onclick = async ()=>{
+      try{
+        await API.del('/api/reservations/'+b.dataset.id);
+        renderRes(await resAll());
+      }catch(err){ alert(err.error||'No se pudo eliminar'); }
+    };
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
